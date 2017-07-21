@@ -1,4 +1,5 @@
 #include <img.hpp>
+#include <pos_guard.hpp>
 #include <rand.hpp>
 #include <ship.hpp>
 #include <shot.hpp>
@@ -10,15 +11,9 @@ ship::ship(): sprite(0, 0, wyel_images.i_ship, DO) {
 }
 
 void ship::move(const direction_t &_d) noexcept {
-  const int _x = rect.x;
-  const int _y = rect.y;
-
+  PosGuard pg(rect.x, rect.y);
   sprite::move(_d);
-
-  if(!valid()) {
-    rect.x = _x;
-    rect.y = _y;
-  }
+  if(valid()) pg.disable();
 }
 
 void ship::fire() {

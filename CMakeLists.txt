@@ -14,7 +14,7 @@ include_directories("${CMAKE_CURRENT_SOURCE_DIR}/include" "${SDL2_INCLUDE_DIR}")
 
 add_subdirectory(images)
 
-add_executable(wyel-sdl average.cxx config.cxx error.cxx font.cxx img.cxx lock.cxx main.cxx menu.cxx perlin_noise.cxx rand.cxx rect.cxx ship.cxx shot.cxx sprite.cxx)
+add_executable(wyel-sdl average.cxx config.cxx error.cxx font.cxx img.cxx lock.cxx main.cxx menu.cxx perlin_noise.cxx pos_guard.cxx rand.cxx rect.cxx ship.cxx shot.cxx sprite.cxx)
 target_link_libraries(wyel-sdl ${SDL2_LIBRARY} ${SDL2_TTF_LIBRARY} ${M_LIB})
 
 install(TARGETS wyel-sdl DESTINATION "${INSTALL_BIN_DIR}")
