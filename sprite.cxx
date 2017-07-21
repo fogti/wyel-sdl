@@ -1,7 +1,7 @@
-#include "borders.hpp"
-#include "direction.hpp"
-#include "rect.hpp"
-#include "sprite.hpp"
+#include <borders.hpp>
+#include <direction.hpp>
+#include <rect.hpp>
+#include <sprite.hpp>
 
 sprite::sprite(int x, int y, SDL_Texture *new_image, direction_t _d): d(_d), collision(false) {
   set_image(new_image);

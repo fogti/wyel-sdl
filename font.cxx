@@ -1,4 +1,4 @@
-#include "font.hpp"
+#include <font.hpp>
 
 TTF_Font* get_font(const int ptsize) {
   static const std::string fpf = "/usr/share/fonts/";

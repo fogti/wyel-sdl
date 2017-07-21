@@ -1,7 +1,7 @@
-#include "img.hpp"
-#include "rand.hpp"
-#include "ship.hpp"
-#include "shot.hpp"
+#include <img.hpp>
+#include <rand.hpp>
+#include <ship.hpp>
+#include <shot.hpp>
 
 ship::ship(): sprite(0, 0, wyel_images.i_ship, DO) {
   do {

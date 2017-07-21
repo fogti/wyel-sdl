@@ -3,7 +3,7 @@
 #include <SDL.h>
 #include <SDL_ttf.h>
 
-#include "error.hpp"
+#include <error.hpp>
 
 void errmsg(const std::string &msg) {
   fprintf(stderr, "wyel-sdl: %s\n", msg.c_str());

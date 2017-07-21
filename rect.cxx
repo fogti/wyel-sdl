@@ -1,5 +1,5 @@
 #include <SDL.h>
-#include "rect.hpp"
+#include <rect.hpp>
 
 bool operator==(const SDL_Rect& a, const SDL_Rect& b) noexcept {
   return SDL_RectEquals(&a, &b);

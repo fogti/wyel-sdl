@@ -8,8 +8,8 @@ class WAverage {
 
   WAverage() noexcept;
 
-  void start(value_t startval, weight_t weight) noexcept;
-  void push(value_t val = 1) noexcept;
+  void start(const value_t startval, const weight_t weight) noexcept;
+  void push(const value_t val = 1) noexcept;
   auto get() const noexcept -> value_t;
 
  protected:

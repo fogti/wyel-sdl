@@ -1,4 +1,4 @@
-#include "lock.hpp"
+#include <lock.hpp>
 
 Lock::Lock(SDL_mutex *&m) noexcept: _m(m) {
   SDL_LockMutex(_m);

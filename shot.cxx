@@ -1,8 +1,9 @@
 #include <SDL_thread.h>
 #include <vector>
 #include <algorithm>
-#include "img.hpp"
-#include "shot.hpp"
+
+#include <img.hpp>
+#include <shot.hpp>
 
 using namespace std;
 

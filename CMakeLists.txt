@@ -10,7 +10,7 @@ find_package(SDL2 REQUIRED)
 find_package(SDL2_ttf REQUIRED)
 find_library(M_LIB m)
 
-include_directories("${CMAKE_CURRENT_SOURCE_DIR}" "${SDL2_INCLUDE_DIR}")
+include_directories("${CMAKE_CURRENT_SOURCE_DIR}/include" "${SDL2_INCLUDE_DIR}")
 
 add_subdirectory(images)
 

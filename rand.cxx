@@ -1,7 +1,8 @@
 #include <stdlib.h>
 #include <time.h>
-#include "borders.hpp"
-#include "rand.hpp"
+
+#include <borders.hpp>
+#include <rand.hpp>
 
 void zsrand::init() {
   srand(time(0));

@@ -13,17 +13,17 @@
 #include <iostream>
 #include <algorithm>
 
-#include "average.hpp"
-#include "borders.hpp"
-#include "config.hpp"
-#include "error.hpp"
-#include "font.hpp"
-#include "img.hpp"
-#include "lock.hpp"
-#include "menu.hpp"
-#include "perlin_noise.hpp"
-#include "rand.hpp"
-#include "shot.hpp"
+#include <average.hpp>
+#include <borders.hpp>
+#include <config.hpp>
+#include <error.hpp>
+#include <font.hpp>
+#include <img.hpp>
+#include <lock.hpp>
+#include <menu.hpp>
+#include <perlin_noise.hpp>
+#include <rand.hpp>
+#include <shot.hpp>
 
 using namespace std;
 

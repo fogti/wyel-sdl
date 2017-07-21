@@ -9,10 +9,10 @@
 #include <vector>
 #include <iostream>
 
-#include "borders.hpp"
-#include "config.hpp"
-#include "font.hpp"
-#include "menu.hpp"
+#include <borders.hpp>
+#include <config.hpp>
+#include <font.hpp>
+#include <menu.hpp>
 
 using namespace std;
 

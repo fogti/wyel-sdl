@@ -1,8 +1,8 @@
-#include "perlin_noise.hpp"
 #include <cmath>
 #include <random>
 #include <algorithm>
 #include <numeric>
+#include <perlin_noise.hpp>
 
 // THIS IS A DIRECT TRANSLATION TO C++11 FROM THE REFERENCE
 // JAVA IMPLEMENTATION OF THE IMPROVED PERLIN FUNCTION (see http://mrl.nyu.edu/~perlin/noise/)
