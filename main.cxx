@@ -53,6 +53,18 @@ TTF_Font *text_font;
 // SDL window size
 int WYEL_MAX_X, WYEL_MAX_Y;
 
+static void adjps_between(unsigned int &sleep_time, const WAverage &aver, const WAverage::value_t minmax[2]) {
+  const unsigned int ps = aver.get();
+  if(ps > minmax[1]) ++sleep_time;
+  else if(ps < minmax[0] && sleep_time > 1) --sleep_time;
+}
+
+static void my_pause(const unsigned int sleep_time) {
+  do {
+    SDL_Delay(sleep_time);
+  } while(pause_mode);
+}
+
 static int mover(void *dummy) {
   unsigned int move_sleep = usership ? 5 : 1;
   bool move_ships = false;
@@ -92,15 +104,8 @@ static int mover(void *dummy) {
       ++lifed_rounds;
     }
 
-    {
-      const unsigned int rps = game_rps.get();
-      if(rps > my_config.rps[1]) ++move_sleep;
-      else if(rps < my_config.rps[0] && move_sleep > 1) --move_sleep;
-    }
-
-    do {
-      SDL_Delay(move_sleep);
-    } while(pause_mode);
+    adjps_between(move_sleep, game_rps, my_config.rps);
+    my_pause(move_sleep);
   }
   return 0;
 }
@@ -125,10 +130,7 @@ static int noiser(void *dummy) {
       swap(prod_noise_field, tmp_noise_field);
     }
     tmp_noise_field.clear();
-
-    do {
-      SDL_Delay(my_config.noise_speed / 100 + 1);
-    } while(pause_mode);
+    my_pause(my_config.noise_speed / 100 + 1);
   }
   return 0;
 }
@@ -202,15 +204,8 @@ static int redrawer(void *dummy) {
       SDL_RenderPresent(my_renderer);
     }
 
-    {
-      const unsigned int fps = game_fps.get();
-      if(fps > my_config.fps[1]) ++draw_sleep;
-      else if(fps < my_config.fps[0] && draw_sleep > 1) --draw_sleep;
-    }
-
-    do {
-      SDL_Delay(draw_sleep);
-    } while(pause_mode);
+    adjps_between(draw_sleep, game_fps, my_config.fps);
+    my_pause(draw_sleep);
   }
   breakout = true;
   return 0;

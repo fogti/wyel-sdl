@@ -18,8 +18,6 @@ class sprite {
   bool destroyed() const noexcept;
 
   virtual void notify_destroyed() noexcept;
-
-  const SDL_Rect *get_rect() const noexcept;
   const SDL_Texture *get_image() const noexcept;
 
  protected:

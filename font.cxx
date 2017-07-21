@@ -21,7 +21,7 @@ TTF_Font* get_font(const int ptsize) {
   return ret;
 }
 
-SDL_Texture* CreateTextureFromText(SDL_Renderer* renderer, TTF_Font *font, const std::vector<std::string> lines, const int max_x, const int max_y, const SDL_Color color, const unsigned int text_space, int& text_height) {
+SDL_Texture* CreateTextureFromText(SDL_Renderer* renderer, TTF_Font *font, const std::vector<std::string> &lines, const int max_x, const int max_y, const SDL_Color color, const unsigned int text_space, int& text_height) {
   SDL_Surface *surface = SDL_CreateRGBSurface(0, max_x, max_y, 32, 0, 0, 0, 0);
   SDL_Rect my_rect;
   my_rect.x = 0;

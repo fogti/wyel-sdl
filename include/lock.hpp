@@ -6,7 +6,7 @@ class Mutex;
 class Lock {
   friend class Mutex;
   SDL_mutex *&_m;
-  Lock(SDL_mutex *&m) noexcept;
+  explicit Lock(SDL_mutex *&m) noexcept;
 
  public:
   ~Lock() noexcept;

@@ -2,7 +2,8 @@
 #include <SDL.h>
 #include <average.hpp>
 
-WAverage::WAverage() noexcept: _last(0), _lticks(0), _weight(1) { }
+WAverage::WAverage() noexcept
+  : _last(0), _lticks(0), _weight(1) { }
 
 void WAverage::start(const value_t startval, const weight_t weight) noexcept {
   _last = startval;
@@ -10,8 +11,8 @@ void WAverage::start(const value_t startval, const weight_t weight) noexcept {
   _weight = weight;
 }
 
-void WAverage::push(const value_t val) noexcept {
-  _last += (1000.f * val) / ((SDL_GetTicks() - _lticks) * _weight) - _last / _weight;
+void WAverage::push() noexcept {
+  _last += (1000.f / (SDL_GetTicks() - _lticks) - _last) / _weight;
   _lticks = SDL_GetTicks();
 }
 

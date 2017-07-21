@@ -9,21 +9,17 @@
 #ifndef PERLINNOISE_HPP
 # define PERLINNOISE_HPP 1
 # include <vector>
-
 class PerlinNoise {
-    // The permutation vector
-    std::vector<int> p;
-public:
-    // Initialize with the reference values for the permutation vector
-    PerlinNoise();
-    // Generate a new permutation vector based on the value of seed
-    PerlinNoise(unsigned int seed);
-    // Get a noise value, for 2D images z can have any value
-    double noise(double x, double y, double z) const noexcept;
-private:
-    double fade(double t) const noexcept;
-    double lerp(double t, double a, double b) const noexcept;
-    double grad(int hash, double x, double y, double z) const noexcept;
+  // The permutation vector
+  std::vector<int> p;
+ public:
+  // Generate a new permutation vector based on the value of seed
+  explicit PerlinNoise(unsigned int seed);
+  // Get a noise value, for 2D images z can have any value
+  double noise(double x, double y, double z) const noexcept;
+ private:
+  double fade(double t) const noexcept;
+  double lerp(double t, double a, double b) const noexcept;
+  double grad(int hash, double x, double y, double z) const noexcept;
 };
-
 #endif

@@ -12,5 +12,5 @@
  * searches for suitable fonts via location-list
  */
 TTF_Font* get_font(const int ptsize);
-SDL_Texture* CreateTextureFromText(SDL_Renderer* renderer, TTF_Font *font, const std::vector<std::string> lines, const int max_x, const int max_y, const SDL_Color color, const unsigned int text_space, int& text_height);
+SDL_Texture* CreateTextureFromText(SDL_Renderer* renderer, TTF_Font *font, const std::vector<std::string> &lines, const int max_x, const int max_y, const SDL_Color color, const unsigned int text_space, int& text_height);
 #endif

@@ -30,10 +30,6 @@ void sprite::move(const direction_t &_d) noexcept {
   direction2xyd(_d, rect.x, rect.y);
 }
 
-const SDL_Rect *sprite::get_rect() const noexcept {
-  return &rect;
-}
-
 const SDL_Texture *sprite::get_image() const noexcept {
   return image;
 }
