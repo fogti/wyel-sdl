@@ -4,23 +4,11 @@
 #include <fstream>
 #include <sstream>
 #include <unordered_map>
+
 #include <config.hpp>
+#include <fs.hpp>
 
 using namespace std;
-
-static string get_wyel_home() {
-  char * const tmp = SDL_GetPrefPath("ZITE", "wyel-sdl");
-  const string ret = (tmp ? tmp : ".");
-  SDL_free(tmp);
-  return ret;
-}
-
-static string get_wyel_static_home() {
-  char * const tmp = SDL_GetBasePath();
-  const string ret = (tmp ? tmp : string());
-  SDL_free(tmp);
-  return ret;
-}
 
 wyel_config get_wyel_config() {
   wyel_config ret;

@@ -1,7 +1,9 @@
 #include <font.hpp>
+#include <fs.hpp>
 
 TTF_Font* get_font(const int ptsize) {
   static const std::string fpf = "/usr/share/fonts/";
+  static const std::string stpf = get_wyel_static_home();
   static const char* const fonts[] = {
     "liberation-fonts/LiberationMono-Regular.ttf",
     "source-pro/SourceCodePro-Regular.otf",
@@ -14,7 +16,10 @@ TTF_Font* get_font(const int ptsize) {
 
   TTF_Font* ret = 0;
   for(auto &&i : fonts) {
-    ret = TTF_OpenFont((fpf + i).c_str(), ptsize);
+    for(auto &&pf : {stpf, fpf}) {
+      ret = TTF_OpenFont((pf + i).c_str(), ptsize);
+      if(ret) break;
+    }
     if(ret) break;
   }
 
@@ -33,7 +38,8 @@ SDL_Texture* CreateTextureFromText(SDL_Renderer* renderer, TTF_Font *font, const
     my_rect.h = txt_surface->h;
     SDL_BlitSurface(txt_surface, 0, surface, &my_rect);
     SDL_FreeSurface(txt_surface);
-    my_rect.y += my_rect.h + text_space;
+    my_rect.y += my_rect.h;
+    my_rect.y += text_space;
   }
   SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
   SDL_FreeSurface(surface);
