@@ -10,7 +10,6 @@ using namespace std;
 struct shot : public sprite {
   shot(int x, int y, direction_t _d);
   void notify_destroyed() noexcept;
-
   shot& operator++() noexcept;
 };
 
@@ -36,9 +35,9 @@ void cleanup_shots() {
     shots.end());
 
   for(auto &i : shots)
-    if(i.valid() && !i.destroyed())
+    if(!i.destroyed())
       for(auto &j : shots)
-        if(&i != &j && j.valid() && !j.destroyed() && is_hit(i, j)) {
+        if(&i != &j && !j.destroyed() && is_hit(i, j)) {
           i.notify_destroyed();
           j.notify_destroyed();
         }
@@ -63,7 +62,7 @@ void fire_shot(int x, int y, direction_t d) {
 
 bool is_ship_hit(ship const& s) noexcept {
   for(auto &i : shots)
-    if(is_hit(s, i)) {
+    if(!i.destroyed() && is_hit(s, i)) {
       i.notify_destroyed();
       return true;
     }

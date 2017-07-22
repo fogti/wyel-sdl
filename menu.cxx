@@ -135,6 +135,7 @@ static int* get_si_edit_var(const unsigned int edit_num) {
 }
 
 void menuer() {
+  // menu constants
   static const vector<string> edit_screens = {
     "FPS from",
     "FPS   to",
@@ -162,16 +163,19 @@ void menuer() {
   };
 
   static const auto key_sc_bs = SDL_GetScancodeFromKey(SDLK_BACKSPACE);
+  static const unsigned int text_space = 2;
 
+  // main menu code
+
+  // enter pause mode (pause other threads)
   pause_mode = true;
 
   // wait for other threads to pause
-  SDL_Delay(100);
+  SDL_Delay(200);
 
-  const unsigned int text_space = 2;
   unsigned int edit_num = 0;
   unsigned int number_input = 0;
-  int text_height = 0;
+  int text_height;
   SDL_Event event;
   bool edit = false;
 

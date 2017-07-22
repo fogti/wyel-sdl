@@ -12,6 +12,8 @@
 #include <vector>
 #include <iostream>
 #include <algorithm>
+#include <functional>
+#include <utility>
 
 #include <average.hpp>
 #include <borders.hpp>
@@ -33,7 +35,10 @@ wyel_config my_config;
 atomic<bool> breakout, pause_mode;
 static WAverage game_rps, game_fps;
 static unsigned int lifed_rounds, killed_ships;
-static map<unsigned int, map<unsigned int, unsigned char>> prod_noise_field;
+
+// noise field
+typedef map<unsigned int, map<unsigned int, unsigned char>> noise_field_t;
+static noise_field_t prod_noise_field;
 
 // ships
 static ship *usership;
@@ -43,6 +48,8 @@ static vector<ship> ships;
 SDL_Window *my_window;
 SDL_Renderer *my_renderer;
 
+// mutexes
+// lock order: draw > (objch > usership)
 static Mutex mutex_draw, mutex_objch, mutex_usership;
 
 // SDL text
@@ -63,6 +70,23 @@ static void my_pause(const unsigned int sleep_time) {
   do {
     SDL_Delay(sleep_time);
   } while(pause_mode);
+}
+
+template<typename Ret>
+Ret with_usership(const std::function<Ret (ship&)> &fn) {
+  if(usership) {
+    Lock l_us = mutex_usership.get_lock();
+    return fn(*usership);
+  }
+  return static_cast<Ret>(false);
+}
+
+template<>
+void with_usership(const std::function<void (ship&)> &fn) {
+  if(usership) {
+    Lock l_us = mutex_usership.get_lock();
+    fn(*usership);
+  }
 }
 
 static int mover(void *dummy) {
@@ -94,10 +118,9 @@ static int mover(void *dummy) {
           i.fire();
         }
 
-        if(usership) {
-          Lock l_us = mutex_usership.get_lock();
-          usership->fire();
-        }
+        with_usership<void>([](ship &my_usership) {
+          my_usership.fire();
+        });
       }
 
       cleanup_shots();
@@ -110,14 +133,23 @@ static int mover(void *dummy) {
   return 0;
 }
 
+static void noise_pause() {
+  do {
+    SDL_Delay(my_config.noise_speed / 100 + 1);
+  } while(!breakout && (pause_mode || !my_config.noise_prec));
+}
+
 static int noiser(void *dummy) {
   PerlinNoise pn(rand());
-  map<unsigned int, map<unsigned int, unsigned char>> tmp_noise_field;
+
+  // pause here to prevent div by zero error
+  noise_pause();
 
   while(!breakout) {
     const double cur_ticks = static_cast<double>(SDL_GetTicks()) / my_config.noise_speed;
     const double max_x = static_cast<double>(WYEL_MAX_X) / my_config.noise_prec;
     const double max_y = static_cast<double>(WYEL_MAX_Y) / my_config.noise_prec;
+    noise_field_t tmp_noise_field;
 
     for(int x = 0; x < max_x; ++x)
       for(int y = 0; y < max_y; ++y) {
@@ -127,27 +159,25 @@ static int noiser(void *dummy) {
 
     {
       Lock l_dr = mutex_draw.get_lock();
-      swap(prod_noise_field, tmp_noise_field);
+      prod_noise_field = move(tmp_noise_field);
     }
-    tmp_noise_field.clear();
-    my_pause(my_config.noise_speed / 100 + 1);
+    noise_pause();
   }
   return 0;
 }
 
 static int redrawer(void *dummy) {
   unsigned int draw_sleep = 15;
-  PerlinNoise pn(rand());
 
-  while(!breakout) {
-    if(ships.empty()) break;
-    game_fps.push();
-
-    if(usership) {
+  while(!breakout && !ships.empty()) {
+    {
+      // prevent deadlock
       Lock l_och = mutex_objch.get_lock();
-      Lock l_us  = mutex_usership.get_lock();
-      if(is_ship_hit(*usership)) break;
+      if(with_usership<bool>([](ship &my_usership) {
+        return is_ship_hit(my_usership);
+      })) break;
     }
+    game_fps.push();
 
     {
       Lock l_dr = mutex_draw.get_lock();
@@ -156,12 +186,16 @@ static int redrawer(void *dummy) {
       SDL_SetRenderDrawColor(my_renderer, 0, 0, 0, 255);
       SDL_RenderClear(my_renderer);
 
-      for(auto &&x : prod_noise_field)
-        for(auto &&y : x.second) {
-          SDL_SetRenderDrawColor(my_renderer, 0, y.second, y.second, 255);
-          SDL_RenderDrawPoint(my_renderer, x.first, y.first);
-        }
+      // noise
+      if(my_config.noise_prec) {
+        for(auto &&x : prod_noise_field)
+          for(auto &&y : x.second) {
+            SDL_SetRenderDrawColor(my_renderer, 0, y.second, y.second, 255);
+            SDL_RenderDrawPoint(my_renderer, x.first, y.first);
+          }
+      }
 
+      // ships and shots
       {
         Lock l_och = mutex_objch.get_lock();
         draw_shots(my_renderer);
@@ -178,27 +212,27 @@ static int redrawer(void *dummy) {
           ships.end());
       }
 
-      if(usership) {
-        Lock l_us = mutex_usership.get_lock();
-        usership->draw(my_renderer);
-      }
+      // usership
+      with_usership<void>([](ship &my_usership) {
+        my_usership.draw(my_renderer);
+      });
 
+      // state text
       {
         Lock l_och = mutex_objch.get_lock();
+
         SDL_Surface *state_text = TTF_RenderText_Solid(text_font, ("KS: " + to_string(killed_ships) + " | RPS: " + to_string(game_rps.get()) + " | FPS: " + to_string(game_fps.get())).c_str(), state_text_color);
-        if(state_text) {
-          SDL_Texture *texture = SDL_CreateTextureFromSurface(my_renderer, state_text);
-          SDL_QueryTexture(texture, 0, 0, &text_rect.w, &text_rect.h);
+        if(!state_text) ttf_errmsg("TTF_RenderText_Solid");
 
-          SDL_SetRenderDrawColor(my_renderer, 0, 0, 0, 255);
-          SDL_RenderFillRect(my_renderer, &text_rect);
+        SDL_Texture *texture = SDL_CreateTextureFromSurface(my_renderer, state_text);
+        SDL_QueryTexture(texture, 0, 0, &text_rect.w, &text_rect.h);
 
-          SDL_RenderCopy(my_renderer, texture, 0, &text_rect);
-          SDL_DestroyTexture(texture);
-          SDL_FreeSurface(state_text);
-        } else {
-          ttf_errmsg("TTF_RenderText_Solid");
-        }
+        SDL_SetRenderDrawColor(my_renderer, 0, 0, 0, 255);
+        SDL_RenderFillRect(my_renderer, &text_rect);
+
+        SDL_RenderCopy(my_renderer, texture, 0, &text_rect);
+        SDL_DestroyTexture(texture);
+        SDL_FreeSurface(state_text);
       }
 
       SDL_RenderPresent(my_renderer);
@@ -221,8 +255,8 @@ static void quit() {
   }
   SDL_Quit();
   set_wyel_config(my_config);
-  cout << "Rounds: " << lifed_rounds << endl
-       << "Killed ships: " << killed_ships << endl;
+  cout << "Rounds: " << lifed_rounds << '\n'
+       << "Killed ships: " << killed_ships << '\n';
 }
 
 static void parse_arguments(const int argc, const char *const argv[]) {
@@ -277,7 +311,7 @@ static void parse_arguments(const int argc, const char *const argv[]) {
     }
   }
 
-  // hack: we delay creation of usership
+  // XXX hack: we delay creation of usership
   if(have_usership) usership = reinterpret_cast<ship*>(&usership);
 }
 
@@ -365,17 +399,16 @@ int main(int argc, char *argv[]) {
     if(breakout) break;
     if(keys[key_sc_m]) menuer();
 
-    if(usership) {
-      Lock l_us = mutex_usership.get_lock();
+    with_usership<void>([keys](ship &my_usership) {
       if(keys[SDL_SCANCODE_UP]    || keys[SDL_SCANCODE_W])
-        usership->move(UP);
+        my_usership.move(UP);
       if(keys[SDL_SCANCODE_LEFT]  || keys[SDL_SCANCODE_A])
-        usership->move(LE);
+        my_usership.move(LE);
       if(keys[SDL_SCANCODE_DOWN]  || keys[SDL_SCANCODE_S])
-        usership->move(DO);
+        my_usership.move(DO);
       if(keys[SDL_SCANCODE_RIGHT] || keys[SDL_SCANCODE_D])
-        usership->move(RI);
-    }
+        my_usership.move(RI);
+    });
     SDL_Delay(30);
   }
   breakout = true;

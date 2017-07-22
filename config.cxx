@@ -9,8 +9,17 @@
 using namespace std;
 
 static string get_wyel_home() {
-  const char * const tmp = SDL_GetPrefPath("ZITE", "wyel-sdl");
-  return (tmp ? tmp : "");
+  char * const tmp = SDL_GetPrefPath("ZITE", "wyel-sdl");
+  const string ret = (tmp ? tmp : ".");
+  SDL_free(tmp);
+  return ret;
+}
+
+static string get_wyel_static_home() {
+  char * const tmp = SDL_GetBasePath();
+  const string ret = (tmp ? tmp : string());
+  SDL_free(tmp);
+  return ret;
 }
 
 wyel_config get_wyel_config() {
@@ -101,8 +110,9 @@ wyel_config get_wyel_config() {
     }
   }
 
-  ret.datalocs.push_back("/usr/share/games/wyel-sdl");
   ret.datalocs.push_back(myhome);
+  ret.datalocs.push_back(get_wyel_static_home());
+  ret.datalocs.push_back("/usr/share/games/wyel-sdl");
 
   return ret;
 }
@@ -111,7 +121,7 @@ void set_wyel_config(const wyel_config& cfg) {
   ofstream cfgf(get_wyel_home() + "/config");
   if(cfgf) {
     {
-      const vector<string> twdl(cfg.datalocs.begin(), cfg.datalocs.end() - 2);
+      const vector<string> twdl(cfg.datalocs.begin(), cfg.datalocs.end() - 3);
       if(!twdl.empty()) {
         cfgf << "datalocs";
         for(auto &&i : twdl) cfgf << ' ' << i;
@@ -129,7 +139,7 @@ void set_wyel_config(const wyel_config& cfg) {
 }
 
 void describe_wyel_config(ostream &out) {
-  out << "-- Configuration file syntax (location: $HOME/.local/share/ZITE/wyel-sdl/config) --\n"
+  out << "-- Configuration file syntax (location: " << get_wyel_home() << "/config) --\n"
          "possible lines:\n"
          "  dataloc LOCATION...  add LOCATION to the data search path (e.g. images)\n"
          "  fps MIN MAX          set the inclusive minimum / maximum frames per second target values\n"
