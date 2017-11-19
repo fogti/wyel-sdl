@@ -12,8 +12,9 @@ void WAverage::start(const value_t startval, const weight_t weight) noexcept {
 }
 
 void WAverage::push() noexcept {
-  _last += (1000.f / (SDL_GetTicks() - _lticks) - _last) / _weight;
-  _lticks = SDL_GetTicks();
+  const auto nticks = SDL_GetTicks();
+  _last += (1000.f / (nticks - _lticks) - _last) / _weight;
+  _lticks = nticks;
 }
 
 auto WAverage::get() const noexcept -> value_t {

@@ -1,24 +1,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <SDL.h>
-#include <SDL_ttf.h>
 
 #include <atomic>
-
 #include <error.hpp>
 
 extern std::atomic<bool> breakout;
+using std::string;
 
-void errmsg(const std::string &msg) {
+void errmsg(const string &msg) {
   fprintf(stderr, "wyel-sdl: %s\n", msg.c_str());
   breakout = true;
   exit(1);
 }
 
-void sdl_errmsg(const char *const fn) {
-  errmsg("SDL: " + std::string(fn) + "() failed: " + SDL_GetError());
-}
-
-void ttf_errmsg(const char *const fn) {
-  errmsg("TTF: " + std::string(fn) + "() failed: " + TTF_GetError());
+void sdl_xxx_errmsg(const char *const subsystem, const char *const fn) {
+  errmsg(string(subsystem) + ": " + string(fn) + "() failed: " + SDL_GetError());
 }
