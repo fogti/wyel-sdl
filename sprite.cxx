@@ -3,21 +3,15 @@
 #include <rect.hpp>
 #include <sprite.hpp>
 
-sprite::sprite(int x, int y, SDL_Texture *new_image, direction_t _d): d(_d), collision(false) {
+sprite::sprite(int x, int y, SDL_Texture *new_image, direction_t _d): collision(false), d(_d) {
   set_image(new_image);
-  set_pos(x, y);
-}
-
-sprite::~sprite() noexcept { }
-
-void sprite::set_image(SDL_Texture *new_image) noexcept {
-  image = new_image;
-  SDL_QueryTexture(image, 0, 0, &rect.w, &rect.h);
-}
-
-void sprite::set_pos(int x, int y) noexcept {
   rect.x = x;
   rect.y = y;
+}
+
+void sprite::set_image(SDL_Texture *const new_image) noexcept {
+  image = new_image;
+  SDL_QueryTexture(image, 0, 0, &rect.w, &rect.h);
 }
 
 void sprite::move(int mx, int my) noexcept {
@@ -34,12 +28,12 @@ const SDL_Texture *sprite::get_image() const noexcept {
   return image;
 }
 
-bool sprite::draw(SDL_Renderer *target) noexcept {
+bool sprite::draw(SDL_Renderer *const target) noexcept {
   return SDL_RenderCopy(target, image, 0, &rect) == 0;
 }
 
 bool sprite::valid() const noexcept {
-  return (image && rect.x > 0 && rect.y > 0 && (rect.x + rect.w) < WYEL_MAX_X && (rect.y + rect.h) < WYEL_MAX_Y);
+  return image && rect.x > 0 && rect.y > 0 && (rect.x + rect.w) < WYEL_MAX_X && (rect.y + rect.h) < WYEL_MAX_Y;
 }
 
 bool sprite::destroyed() const noexcept {

@@ -48,19 +48,20 @@ void move_shots() noexcept {
 }
 
 void draw_shots(SDL_Renderer *target) {
-  for(auto &&i : shots) i.draw(target);
-  shots.erase(
-    remove_if(shots.begin(), shots.end(), [](const shot &s) noexcept -> bool {
-      return s.destroyed();
-    }),
-    shots.end());
+  for(auto it = shots.begin(); it != shots.end();) {
+    it->draw(target);
+    if(it->destroyed())
+      it = shots.erase(it);
+    else
+      ++it;
+  }
 }
 
 void fire_shot(int x, int y, direction_t d) {
   shots.emplace_back(x, y, d);
 }
 
-bool is_ship_hit(ship const& s) noexcept {
+bool is_ship_hit(const ship &s) noexcept {
   for(auto &i : shots)
     if(!i.destroyed() && is_hit(s, i)) {
       i.notify_destroyed();

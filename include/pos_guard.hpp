@@ -10,6 +10,6 @@ class PosGuard {
  public:
   PosGuard(int &x, int &y) noexcept;
   ~PosGuard() noexcept;
-  void disable();
+  void disable() noexcept;
 };
 #endif

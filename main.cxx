@@ -50,7 +50,8 @@ SDL_Renderer *my_renderer;
 
 // mutexes
 // lock order: draw > (objch > usership)
-static Mutex mutex_draw, mutex_objch, mutex_usership;
+Mutex mutex_draw;
+static Mutex mutex_objch, mutex_usership;
 
 // SDL text
 static SDL_Color state_text_color;
@@ -75,7 +76,7 @@ static void my_pause(const unsigned int sleep_time) {
 template<typename Ret>
 Ret with_usership(const std::function<Ret (ship&)> &fn) {
   if(usership) {
-    Lock l_us = mutex_usership.get_lock();
+    LOCK(usership);
     return fn(*usership);
   }
   return static_cast<Ret>(false);
@@ -84,7 +85,7 @@ Ret with_usership(const std::function<Ret (ship&)> &fn) {
 template<>
 void with_usership(const std::function<void (ship&)> &fn) {
   if(usership) {
-    Lock l_us = mutex_usership.get_lock();
+    LOCK(usership);
     fn(*usership);
   }
 }
@@ -97,7 +98,7 @@ static int mover(void *dummy) {
     game_rps.push();
 
     {
-      Lock l_och = mutex_objch.get_lock();
+      LOCK(objch);
       move_shots();
 
       for(auto &i : ships)
@@ -158,7 +159,7 @@ static int noiser(void *dummy) {
       }
 
     {
-      Lock l_dr = mutex_draw.get_lock();
+      LOCK(draw);
       prod_noise_field = move(tmp_noise_field);
     }
     noise_pause();
@@ -172,7 +173,7 @@ static int redrawer(void *dummy) {
   while(!breakout && !ships.empty()) {
     {
       // prevent deadlock
-      Lock l_och = mutex_objch.get_lock();
+      LOCK(objch);
       if(with_usership<bool>([](ship &my_usership) {
         return is_ship_hit(my_usership);
       })) break;
@@ -180,7 +181,7 @@ static int redrawer(void *dummy) {
     game_fps.push();
 
     {
-      Lock l_dr = mutex_draw.get_lock();
+      LOCK(draw);
 
       // background
       SDL_SetRenderDrawColor(my_renderer, 0, 0, 0, 255);
@@ -197,7 +198,7 @@ static int redrawer(void *dummy) {
 
       // ships and shots
       {
-        Lock l_och = mutex_objch.get_lock();
+        LOCK(objch);
         draw_shots(my_renderer);
 
         for(auto &&i : ships) {
@@ -219,7 +220,7 @@ static int redrawer(void *dummy) {
 
       // state text
       {
-        Lock l_och = mutex_objch.get_lock();
+        LOCK(objch);
 
         SDL_Surface *state_text = TTF_RenderText_Solid(text_font, ("KS: " + to_string(killed_ships) + " | RPS: " + to_string(game_rps.get()) + " | FPS: " + to_string(game_fps.get())).c_str(), state_text_color);
         if(!state_text) ttf_errmsg("TTF_RenderText_Solid");
@@ -248,7 +249,7 @@ static int redrawer(void *dummy) {
 static void quit() {
   delete usership; usership = 0;
 
-  img_db_cleanup();
+  img_db::cleanup();
   if(TTF_WasInit()) {
     TTF_CloseFont(text_font);
     TTF_Quit();
@@ -272,7 +273,7 @@ static void parse_arguments(const int argc, const char *const argv[]) {
       switch(mode) {
         case APM_MSC:
           {
-            const auto x = stoi(curarg);
+            const unsigned x = stoi(curarg);
             if(x > 0) {
               my_config.max_ships = x;
               mode = APM_STD;
@@ -349,7 +350,7 @@ int main(int argc, char *argv[]) {
   my_renderer = SDL_CreateRenderer(my_window, -1, 0);
   if(!my_renderer) sdl_errmsg("SDL_CreateRenderer");
 
-  if(!img_db_init(my_renderer, my_config.datalocs)) errmsg("img_db_init() failed: images not found");
+  if(!img_db::init(my_renderer, my_config.datalocs)) errmsg("img_db_init() failed: images not found");
   SDL_SetRenderDrawBlendMode(my_renderer, SDL_BLENDMODE_NONE);
 
   if(TTF_Init() == -1) ttf_errmsg("TTF_Init");
@@ -384,7 +385,7 @@ int main(int argc, char *argv[]) {
           switch(event.window.event) {
             case SDL_WINDOWEVENT_SIZE_CHANGED:
               {
-                Lock l_dr = mutex_draw.get_lock();
+                LOCK(draw);
                 WYEL_MAX_X = event.window.data1;
                 WYEL_MAX_Y = event.window.data2;
               }

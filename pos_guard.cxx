@@ -10,6 +10,6 @@ PosGuard::~PosGuard() noexcept {
   }
 }
 
-void PosGuard::disable() {
+void PosGuard::disable() noexcept {
   _enabled = false;
 }

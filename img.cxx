@@ -18,7 +18,9 @@ static SDL_Texture *img_load_BMP(SDL_Renderer* renderer, const string &path, con
   return 0;
 }
 
-bool img_db_init(SDL_Renderer* renderer, vector<string> locations) {
+namespace img_db {
+
+bool init(SDL_Renderer* renderer, const vector<string> &locations) {
   wyel_images.i_ship = 0;
   wyel_images.i_ship_destroyed = 0;
   wyel_images.i_shot = 0;
@@ -36,9 +38,11 @@ bool img_db_init(SDL_Renderer* renderer, vector<string> locations) {
   return wyel_images.i_ship && wyel_images.i_ship_destroyed && wyel_images.i_shot && wyel_images.i_shot_destroyed;
 }
 
-void img_db_cleanup() noexcept {
+void cleanup() noexcept {
   SDL_DestroyTexture(wyel_images.i_ship);
   SDL_DestroyTexture(wyel_images.i_shot);
   SDL_DestroyTexture(wyel_images.i_ship_destroyed);
   SDL_DestroyTexture(wyel_images.i_shot_destroyed);
+}
+
 }

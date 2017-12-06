@@ -10,6 +10,8 @@ struct wyel_img_db {
 
 extern wyel_img_db wyel_images;
 
-bool img_db_init(SDL_Renderer* renderer, std::vector<std::string> locations);
-void img_db_cleanup() noexcept;
+namespace img_db {
+  bool init(SDL_Renderer* renderer, const std::vector<std::string> &locations);
+  void cleanup() noexcept;
+}
 #endif

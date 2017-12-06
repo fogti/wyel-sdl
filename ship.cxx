@@ -6,7 +6,8 @@
 
 ship::ship(): sprite(0, 0, wyel_images.i_ship, DO) {
   do {
-    set_pos(zsrand::get_x(), zsrand::get_y());
+    rect.x = zsrand::get_x();
+    rect.y = zsrand::get_y();
   } while(!valid());
 }
 

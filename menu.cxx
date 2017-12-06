@@ -12,6 +12,7 @@
 #include <borders.hpp>
 #include <config.hpp>
 #include <font.hpp>
+#include <lock.hpp>
 #include <menu.hpp>
 
 using namespace std;
@@ -20,6 +21,7 @@ extern wyel_config my_config;
 
 // counters
 extern atomic<bool> breakout, pause_mode;
+extern Mutex mutex_draw;
 
 // SDL base
 extern SDL_Window *my_window;
@@ -173,12 +175,14 @@ void menuer() {
   // wait for other threads to pause
   SDL_Delay(200);
 
+
   unsigned int edit_num = 0;
   unsigned int number_input = 0;
   int text_height;
   SDL_Event event;
   bool edit = false;
 
+  LOCK(draw);
   draw_menu(text_space, text_height);
 
   const unsigned int txtlh = text_space + text_height;

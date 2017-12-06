@@ -21,4 +21,6 @@ class Mutex {
 
   Lock get_lock() noexcept;
 };
+
+# define LOCK(MUTEX) Lock l__##MUTEX = mutex_##MUTEX.get_lock()
 #endif
