@@ -3,19 +3,19 @@
 # include <SDL_thread.h>
 class Mutex;
 
-class Lock {
+class Lock final {
   friend class Mutex;
-  SDL_mutex *&_m;
-  explicit Lock(SDL_mutex *&m) noexcept;
+  SDL_mutex *_m;
+  explicit Lock(SDL_mutex *m) noexcept;
 
  public:
   ~Lock() noexcept;
 };
 
-class Mutex {
- public:
-  SDL_mutex *m;
+class Mutex final {
+  SDL_mutex *_m;
 
+ public:
   Mutex() noexcept;
   ~Mutex() noexcept;
 
