@@ -6,7 +6,7 @@ wyel_img_db wyel_images;
 
 using namespace std;
 
-static SDL_Texture *img_load_BMP(SDL_Renderer* renderer, const string &path, const string &filename) {
+static SDL_Texture *img_load_BMP(SDL_Renderer* const renderer, const string &path, const string &filename) {
   SDL_Surface *const temp = SDL_LoadBMP((path + "/images/" + filename + ".bmp").c_str());
 
   if(temp) {
@@ -20,7 +20,7 @@ static SDL_Texture *img_load_BMP(SDL_Renderer* renderer, const string &path, con
 
 namespace img_db {
 
-bool init(SDL_Renderer* renderer, const vector<string> &locations) {
+bool init(SDL_Renderer* const renderer, const vector<string> &locations) {
   wyel_images.i_ship = 0;
   wyel_images.i_ship_destroyed = 0;
   wyel_images.i_shot = 0;

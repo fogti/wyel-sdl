@@ -11,7 +11,7 @@ struct wyel_img_db {
 extern wyel_img_db wyel_images;
 
 namespace img_db {
-  bool init(SDL_Renderer* renderer, const std::vector<std::string> &locations);
+  bool init(SDL_Renderer* const renderer, const std::vector<std::string> &locations);
   void cleanup() noexcept;
 }
 #endif

@@ -247,7 +247,10 @@ static int redrawer(void *dummy) {
 }
 
 static void quit() {
-  delete usership; usership = 0;
+  if(usership && usership != reinterpret_cast<ship*>(&usership))
+    delete usership;
+
+  usership = 0;
 
   img_db::cleanup();
   if(TTF_WasInit()) {
@@ -264,9 +267,7 @@ static void parse_arguments(const int argc, const char *const argv[]) {
   enum { APM_STD, APM_MSC } mode = APM_STD;
 
   bool have_usership = true;
-  int i = 1;
-
-  for(; i < argc; ++i) {
+  for(int i = 1; i < argc; ++i) {
     const string curarg = argv[i];
     bool valid = true;
     try {
@@ -362,13 +363,13 @@ int main(int argc, char *argv[]) {
 
   ships.emplace_back();
 
-  SDL_Thread *t1 = SDL_CreateThread(redrawer, "redrawer", 0);
+  SDL_Thread *const t1 = SDL_CreateThread(redrawer, "redrawer", 0);
   if(!t1) sdl_errmsg("SDL_CreateThread");
 
-  SDL_Thread *t2 = SDL_CreateThread(mover, "mover", 0);
+  SDL_Thread *const t2 = SDL_CreateThread(mover, "mover", 0);
   if(!t2) sdl_errmsg("SDL_CreateThread");
 
-  SDL_Thread *t3 = SDL_CreateThread(noiser, "noiser", 0);
+  SDL_Thread *const t3 = SDL_CreateThread(noiser, "noiser", 0);
   if(!t3) sdl_errmsg("SDL_CreateThread");
 
   const auto key_sc_q = SDL_GetScancodeFromKey(SDLK_q);
@@ -395,10 +396,11 @@ int main(int argc, char *argv[]) {
       }
     }
 
-    const Uint8 *keys = SDL_GetKeyboardState(0);
-    if(keys[SDL_SCANCODE_ESCAPE] || keys[key_sc_q]) breakout = true;
-    if(breakout) break;
-    if(keys[key_sc_m]) menuer();
+    const Uint8 *const keys = SDL_GetKeyboardState(0);
+    if(breakout || keys[SDL_SCANCODE_ESCAPE] || keys[key_sc_q])
+      break;
+    if(keys[key_sc_m])
+      menuer();
 
     with_usership<void>([keys](ship &my_usership) {
       if(keys[SDL_SCANCODE_UP]    || keys[SDL_SCANCODE_W])
