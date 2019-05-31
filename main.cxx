@@ -1,19 +1,21 @@
+#include <sys/prctl.h>
 #include <stdlib.h>
 #include <math.h>
-#include <SDL_thread.h>
 #include <SDL_ttf.h>
 #include <SDL_keyboard.h>
 #include <SDL_scancode.h>
+#include <ThreadPool.h>
 
-#include <atomic>
-#include <string>
-#include <map>
-#include <unordered_map>
-#include <vector>
-#include <iostream>
 #include <algorithm>
+#include <atomic>
 #include <functional>
+#include <iostream>
+#include <map>
+#include <string>
+#include <thread>
+#include <unordered_map>
 #include <utility>
+#include <vector>
 
 #include <average.hpp>
 #include <borders.hpp>
@@ -35,9 +37,10 @@ wyel_config my_config;
 atomic<bool> breakout, pause_mode;
 static WAverage game_rps, game_fps;
 static unsigned int lifed_rounds, killed_ships;
+static atomic<unsigned> move_sleep, draw_sleep;
 
 // noise field
-typedef map<unsigned int, map<unsigned int, unsigned char>> noise_field_t;
+typedef map<unsigned int, map<unsigned int, uint32_t>> noise_field_t;
 static noise_field_t prod_noise_field;
 
 // ships
@@ -50,8 +53,10 @@ SDL_Renderer *my_renderer;
 
 // mutexes
 // lock order: draw > (objch > usership)
-Mutex mutex_draw;
-static Mutex mutex_objch, mutex_usership;
+mutex mutex_draw;
+static mutex mutex_objch, mutex_usership;
+
+static ThreadPool threadpool(std::min(thread::hardware_concurrency(), static_cast<unsigned>(1u)));
 
 // SDL text
 static SDL_Color state_text_color;
@@ -61,10 +66,11 @@ TTF_Font *text_font;
 // SDL window size
 int WYEL_MAX_X, WYEL_MAX_Y;
 
-static void adjps_between(unsigned int &sleep_time, const WAverage &aver, const WAverage::value_t minmax[2]) {
+static unsigned int adjps_between(unsigned int sleep_time, const WAverage &aver, const WAverage::value_t minmax[2]) {
   const unsigned int ps = aver.get();
   if(ps > minmax[1]) ++sleep_time;
-  else if(ps < minmax[0] && sleep_time > 1) --sleep_time;
+  else if(ps < minmax[0] && sleep_time > 0) --sleep_time;
+  return sleep_time;
 }
 
 static void my_pause(const unsigned int sleep_time) {
@@ -90,71 +96,93 @@ void with_usership(const std::function<void (ship&)> &fn) {
   }
 }
 
-static int mover(void *dummy) {
-  unsigned int move_sleep = usership ? 5 : 1;
-  bool move_ships = false;
+static void mover() {
+  move_sleep = usership ? 5 : 1;
+  vector<future<void>> futvec;
+  futvec.reserve(2 + ships.size());
+  prctl(PR_SET_NAME, "mover", 0, 0, 0);
   while(!breakout) {
-    move_ships = !move_ships;
     game_rps.push();
 
     {
       LOCK(objch);
-      move_shots();
+      futvec.emplace_back(threadpool.enqueue(move_shots));
 
-      for(auto &i : ships)
-        if(is_ship_hit(i)) i.notify_destroyed();
+      if(ships.size() < my_config.max_ships && rand() % my_config.spawn_probab == 0) ships.emplace_back();
 
-      if(rand() % my_config.spawn_probab == 0 && ships.size() < my_config.max_ships) ships.emplace_back();
-
-      if(move_ships) {
-        for(auto &i : ships) {
-          if(!i.valid() || i.destroyed()) continue;
+      for(auto &i : ships) {
+        futvec.emplace_back(threadpool.enqueue([&i]() {
+          if(!i.valid()) return;
+          if(i.destroyed() || is_ship_hit(i)) {
+            i.notify_destroyed();
+            return;
+          }
           direction_t d = zsrand::get_direction();
           i.move(d);
           if(is_ship_hit(i)) {
-            i.move(against_direction(d));
-            i.move(against_direction(d));
+            const auto agd = against_direction(d);
+            i.move(agd);
+            i.move(agd);
             i.move(d);
           }
-          i.fire();
-        }
-
-        with_usership<void>([](ship &my_usership) {
-          my_usership.fire();
-        });
+        }));
       }
 
-      cleanup_shots();
-      ++lifed_rounds;
+      for(auto &i : futvec)
+        i.wait();
+      futvec.clear();
+      reserve_shots(2 + ships.size());
+      for(auto &i : ships)
+        i.fire();
+
+      with_usership<void>([](ship &my_usership) {
+        if(is_ship_hit(my_usership)) return;
+        const auto mud = my_usership.d;
+        const auto agmud = against_direction(mud);
+        my_usership.move(mud);
+        my_usership.fire();
+        size_t hold = 10;
+        do {
+          my_usership.move(agmud);
+          my_usership.move(agmud);
+          my_usership.move(mud);
+        } while(--hold && my_usership.valid() && is_ship_hit(my_usership));
+      });
     }
 
-    adjps_between(move_sleep, game_rps, my_config.rps);
+    ++lifed_rounds;
+    move_sleep = adjps_between(move_sleep, game_rps, my_config.rps);
     my_pause(move_sleep);
   }
-  return 0;
 }
 
-static void noise_pause() {
-  do {
-    SDL_Delay(my_config.noise_speed / 100 + 1);
-  } while(!breakout && (pause_mode || !my_config.noise_prec));
-}
-
-static int noiser(void *dummy) {
+static void noiser() {
   PerlinNoise pn(rand());
-
-  // pause here to prevent div by zero error
-  noise_pause();
+  prctl(PR_SET_NAME, "noiser", 0, 0, 0);
 
   while(!breakout) {
+    // pause here to prevent div by zero error
+    {
+      unsigned short i = 0;
+      do {
+        SDL_Delay(1 + i);
+        ++i; i %= 500;
+      } while(!breakout && (pause_mode || !my_config.noise_prec));
+    }
+    if(breakout) break;
+
+    double max_x, max_y;
+    {
+      LOCK(draw);
+      max_x = static_cast<double>(WYEL_MAX_X) / my_config.noise_prec;
+      max_y = static_cast<double>(WYEL_MAX_Y) / my_config.noise_prec;
+    }
     const double cur_ticks = static_cast<double>(SDL_GetTicks()) / my_config.noise_speed;
-    const double max_x = static_cast<double>(WYEL_MAX_X) / my_config.noise_prec;
-    const double max_y = static_cast<double>(WYEL_MAX_Y) / my_config.noise_prec;
     noise_field_t tmp_noise_field;
 
-    for(int x = 0; x < max_x; ++x)
-      for(int y = 0; y < max_y; ++y) {
-        const double cur_noise = pn.noise(static_cast<double>(x) / max_x, static_cast<double>(y) / max_y, cur_ticks) * cur_ticks;
+    for(unsigned int x = 0; x < max_x; ++x)
+      for(unsigned int y = 0; y < max_y; ++y) {
+        const double cur_noise = pn.noise(x / max_x, y / max_y, cur_ticks) * cur_ticks;
         tmp_noise_field[x * my_config.noise_prec][y * my_config.noise_prec] = 255 * (cur_noise - floor(cur_noise));
       }
 
@@ -162,21 +190,20 @@ static int noiser(void *dummy) {
       LOCK(draw);
       prod_noise_field = move(tmp_noise_field);
     }
-    noise_pause();
   }
-  return 0;
 }
 
-static int redrawer(void *dummy) {
-  unsigned int draw_sleep = 15;
+static void redrawer() {
+  draw_sleep = 15;
+  prctl(PR_SET_NAME, "redrawer", 0, 0, 0);
 
   while(!breakout && !ships.empty()) {
     {
       // prevent deadlock
       LOCK(objch);
-      if(with_usership<bool>([](ship &my_usership) {
-        return is_ship_hit(my_usership);
-      })) break;
+      if(with_usership<bool>([](ship &my_usership)
+        { return is_ship_hit(my_usership); }
+      )) break;
     }
     game_fps.push();
 
@@ -188,29 +215,36 @@ static int redrawer(void *dummy) {
       SDL_RenderClear(my_renderer);
 
       // noise
-      if(my_config.noise_prec) {
-        for(auto &&x : prod_noise_field)
-          for(auto &&y : x.second) {
+      if(my_config.noise_prec)
+        for(const auto &x : prod_noise_field) {
+          if(x.first >= WYEL_MAX_X) break;
+          for(const auto &y : x.second) {
+            if(y.first >= WYEL_MAX_Y) break;
             SDL_SetRenderDrawColor(my_renderer, 0, y.second, y.second, 255);
             SDL_RenderDrawPoint(my_renderer, x.first, y.first);
           }
-      }
+        }
 
       // ships and shots
       {
         LOCK(objch);
-        draw_shots(my_renderer);
 
-        for(auto &&i : ships) {
-          i.draw(my_renderer);
-          if(i.destroyed()) ++killed_ships;
+        for(auto it = ships.begin(); it != ships.end();) {
+          bool destruct = false;
+          if(!it->valid()) destruct = true;
+          else {
+            it->draw(my_renderer);
+            destruct = it->destroyed();
+          }
+          if(destruct) {
+            ++killed_ships;
+            it = ships.erase(it);
+          } else {
+            ++it;
+          }
         }
 
-        ships.erase(
-          remove_if(ships.begin(), ships.end(), [](const ship &s) noexcept -> bool {
-            return s.destroyed() || !s.valid();
-          }),
-          ships.end());
+        draw_shots(my_renderer);
       }
 
       // usership
@@ -220,8 +254,6 @@ static int redrawer(void *dummy) {
 
       // state text
       {
-        LOCK(objch);
-
         SDL_Surface *state_text = TTF_RenderText_Solid(text_font, ("KS: " + to_string(killed_ships) + " | RPS: " + to_string(game_rps.get()) + " | FPS: " + to_string(game_fps.get())).c_str(), state_text_color);
         if(!state_text) ttf_errmsg("TTF_RenderText_Solid");
 
@@ -239,11 +271,10 @@ static int redrawer(void *dummy) {
       SDL_RenderPresent(my_renderer);
     }
 
-    adjps_between(draw_sleep, game_fps, my_config.fps);
+    draw_sleep = adjps_between(draw_sleep, game_fps, my_config.fps);
     my_pause(draw_sleep);
   }
   breakout = true;
-  return 0;
 }
 
 static void quit() {
@@ -359,18 +390,14 @@ int main(int argc, char *argv[]) {
   text_font = get_font(12);
   if(!text_font) ttf_errmsg("get_font via TTF_OpenFont");
 
+  const bool have_usership = usership;
   if(usership) usership = new ship();
 
   ships.emplace_back();
 
-  SDL_Thread *const t1 = SDL_CreateThread(redrawer, "redrawer", 0);
-  if(!t1) sdl_errmsg("SDL_CreateThread");
-
-  SDL_Thread *const t2 = SDL_CreateThread(mover, "mover", 0);
-  if(!t2) sdl_errmsg("SDL_CreateThread");
-
-  SDL_Thread *const t3 = SDL_CreateThread(noiser, "noiser", 0);
-  if(!t3) sdl_errmsg("SDL_CreateThread");
+  thread t_redraw(redrawer);
+  thread t_move(mover);
+  thread t_noise(noiser);
 
   const auto key_sc_q = SDL_GetScancodeFromKey(SDLK_q);
   const auto key_sc_m = SDL_GetScancodeFromKey(SDLK_m);
@@ -402,22 +429,24 @@ int main(int argc, char *argv[]) {
     if(keys[key_sc_m])
       menuer();
 
-    with_usership<void>([keys](ship &my_usership) {
-      if(keys[SDL_SCANCODE_UP]    || keys[SDL_SCANCODE_W])
-        my_usership.move(UP);
-      if(keys[SDL_SCANCODE_LEFT]  || keys[SDL_SCANCODE_A])
-        my_usership.move(LE);
-      if(keys[SDL_SCANCODE_DOWN]  || keys[SDL_SCANCODE_S])
-        my_usership.move(DO);
-      if(keys[SDL_SCANCODE_RIGHT] || keys[SDL_SCANCODE_D])
-        my_usership.move(RI);
-    });
-    SDL_Delay(30);
+    if(have_usership) {
+      with_usership<void>([keys](ship &my_usership) {
+        if(keys[SDL_SCANCODE_UP]    || keys[SDL_SCANCODE_W])
+          my_usership.move(UP);
+        if(keys[SDL_SCANCODE_LEFT]  || keys[SDL_SCANCODE_A])
+          my_usership.move(LE);
+        if(keys[SDL_SCANCODE_DOWN]  || keys[SDL_SCANCODE_S])
+          my_usership.move(DO);
+        if(keys[SDL_SCANCODE_RIGHT] || keys[SDL_SCANCODE_D])
+          my_usership.move(RI);
+      });
+    }
+    SDL_Delay(std::min(move_sleep, draw_sleep) / 2 + 20);
   }
   breakout = true;
-  SDL_WaitThread(t1, 0);
-  SDL_WaitThread(t2, 0);
-  SDL_WaitThread(t3, 0);
+  t_redraw.join();
+  t_move.join();
+  t_noise.join();
 
   return 0;
 }

@@ -15,7 +15,7 @@ class sprite {
   void set_image(SDL_Texture *const new_image) noexcept;
   void move(int mx, int my) noexcept;
   void move(const direction_t &_d) noexcept;
-  bool draw(SDL_Renderer *const target) noexcept;
+  bool draw(SDL_Renderer *const target) const noexcept;
   bool valid() const noexcept;
   bool destroyed() const noexcept;
 

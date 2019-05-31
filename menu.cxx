@@ -21,7 +21,7 @@ extern wyel_config my_config;
 
 // counters
 extern atomic<bool> breakout, pause_mode;
-extern Mutex mutex_draw;
+extern mutex mutex_draw;
 
 // SDL base
 extern SDL_Window *my_window;
@@ -152,16 +152,12 @@ void menuer() {
   };
 
   static const map<SDL_Scancode, int> number_map = {
-    { SDL_GetScancodeFromKey(SDLK_0), 0 },
-    { SDL_GetScancodeFromKey(SDLK_1), 1 },
-    { SDL_GetScancodeFromKey(SDLK_2), 2 },
-    { SDL_GetScancodeFromKey(SDLK_3), 3 },
-    { SDL_GetScancodeFromKey(SDLK_4), 4 },
-    { SDL_GetScancodeFromKey(SDLK_5), 5 },
-    { SDL_GetScancodeFromKey(SDLK_6), 6 },
-    { SDL_GetScancodeFromKey(SDLK_7), 7 },
-    { SDL_GetScancodeFromKey(SDLK_8), 8 },
-    { SDL_GetScancodeFromKey(SDLK_9), 9 },
+#define NUMKEY(N) { SDL_GetScancodeFromKey(SDLK_##N), N },
+    NUMKEY(0)
+    NUMKEY(1) NUMKEY(2) NUMKEY(3)
+    NUMKEY(4) NUMKEY(5) NUMKEY(6)
+    NUMKEY(7) NUMKEY(8) NUMKEY(9)
+#undef NUMKEY
   };
 
   static const auto key_sc_bs = SDL_GetScancodeFromKey(SDLK_BACKSPACE);

@@ -28,7 +28,7 @@ const SDL_Texture *sprite::get_image() const noexcept {
   return image;
 }
 
-bool sprite::draw(SDL_Renderer *const target) noexcept {
+bool sprite::draw(SDL_Renderer *const target) const noexcept {
   return SDL_RenderCopy(target, image, 0, &rect) == 0;
 }
 

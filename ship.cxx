@@ -1,5 +1,5 @@
 #include <img.hpp>
-#include <pos_guard.hpp>
+#include <state_guard.hpp>
 #include <rand.hpp>
 #include <ship.hpp>
 #include <shot.hpp>
@@ -12,7 +12,7 @@ ship::ship(): sprite(0, 0, wyel_images.i_ship, DO) {
 }
 
 void ship::move(const direction_t &_d) noexcept {
-  PosGuard pg(rect.x, rect.y);
+  auto pg = make_StateGuard(rect);
   sprite::move(_d);
   if(valid()) pg.disable();
 }
