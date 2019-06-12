@@ -16,8 +16,4 @@ class PerlinNoise {
   explicit PerlinNoise(unsigned int seed);
   // Get a noise value, for 2D images z can have any value
   double noise(double x, double y, double z) const noexcept;
- private:
-  double fade(double t) const noexcept;
-  double lerp(double t, double a, double b) const noexcept;
-  double grad(int hash, double x, double y, double z) const noexcept;
 };
