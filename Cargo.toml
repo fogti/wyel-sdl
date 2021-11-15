@@ -4,6 +4,7 @@ version = "0.0.9"
 edition = "2021"
 
 [dependencies]
+camino = "1.0"
 
 [dependencies.legion]
 version = "0.4"
@@ -11,6 +12,9 @@ version = "0.4"
 [dependencies.sdl2]
 version = "0.35"
 features = ["image", "ttf"]
+
+[dependencies.sdl2-sys]
+version = "0.35"
 
 [dependencies.serde]
 version = "1.0"

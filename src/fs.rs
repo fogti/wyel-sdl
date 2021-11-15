@@ -1,7 +1,8 @@
 use sdl2_sys::{SDL_Free, SDL_GetBasePath, SDL_GetPrefPath};
 use std::ffi::CStr;
+use camino::Utf8PathBuf as PathBuf;
 
-fn get_wyel_home_wrap(f: impl FnOnce() -> *mut i8, dfl: &str) -> camino::UtfPathBuf {
+fn get_wyel_home_wrap(f: impl FnOnce() -> *mut std::os::raw::c_char, dfl: &str) -> PathBuf {
     let x = f();
     if x.is_null() {
         return dfl.to_string();
@@ -18,7 +19,7 @@ fn get_wyel_home_wrap(f: impl FnOnce() -> *mut i8, dfl: &str) -> camino::UtfPath
     .into()
 }
 
-pub fn home() -> String {
+pub fn home() -> PathBuf {
     get_wyel_home_wrap(
         || unsafe {
             SDL_GetPrefPath(
@@ -30,6 +31,6 @@ pub fn home() -> String {
     )
 }
 
-pub fn static_home() -> String {
+pub fn static_home() -> PathBuf {
     get_wyel_home_wrap(|| unsafe { SDL_GetBasePath() }, "")
 }
