@@ -1,5 +1,6 @@
 use rand::distribution::{Distribution, Standard};
 use rand::Rng;
+use sdl2::rect::Point;
 use std::ops;
 
 #[derive(Clone, Copy, Debug)]
@@ -38,16 +39,12 @@ impl Distribution<Direction> for Standard {
 }
 
 impl Direction {
-    #[inline]
-    pub fn apply<T>(self, x: &mut T, y: &mut T)
-    where
-        T: From<u8> + ops::AddAssign + ops::SubAssign,
-    {
+    pub fn to_offset(self) -> (i32, i32) {
         match self {
-            Left => x -= T::from(1),
-            Right => x += T::from(1),
-            Up => y -= T::from(1),
-            Down => y += T::from(1),
+            Left => (-1, 0),
+            Right => (1, 0),
+            Up => (0, -1),
+            Down => (0, 1),
         }
     }
 }

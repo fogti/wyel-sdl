@@ -3,6 +3,7 @@ mod borders;
 mod config;
 mod direction;
 use direction::Direction;
+mod ecs_integ;
 mod font;
 mod fs;
 mod imgs;
