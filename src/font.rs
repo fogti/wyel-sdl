@@ -58,7 +58,8 @@ pub fn create_texture_from_text(
 
     for i in lines {
         let txt_surface = font.render(i).solid(color);
-        my_rect.resize(txt_surface.size());
+        let (w, h) = txt_surface.size();
+        my_rect.resize(w, h);
         txt_surface.blit(None, &mut surface, Some(my_rect))?;
         my_rect.offset(0, my_rect.height() + text_space);
     }
