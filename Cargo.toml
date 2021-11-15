@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 camino = "1.0"
+rand = "0.8"
 
 [dependencies.legion]
 version = "0.4"
