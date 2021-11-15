@@ -5,6 +5,7 @@ mod direction;
 use direction::Direction;
 mod font;
 mod fs;
+mod imgs;
 mod state_guard;
 use state_guard::StateGuard;
 
