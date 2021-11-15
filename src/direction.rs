@@ -1,6 +1,6 @@
-use std::ops;
 use rand::distribution::{Distribution, Standard};
 use rand::Rng;
+use std::ops;
 
 #[derive(Clone, Copy, Debug)]
 pub enum Direction {

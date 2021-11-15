@@ -1,9 +1,12 @@
 mod average;
 mod borders;
-mod direction::Direction;
+mod config;
+mod direction;
+use direction::Direction;
 mod font;
 mod fs;
-mod state_guard::StateGuard;
+mod state_guard;
+use state_guard::StateGuard;
 
 /// `is_hit` is replaced by sdl2::rect::Rect::has_intersection
 
