@@ -39,8 +39,6 @@ static SDL_Texture* get_menu_texture(const unsigned int text_space, int& text_he
     "RPS       to    " + to_string(my_config.rps[1]),
     "max ships     = " + to_string(my_config.max_ships),
     "spawn probab  = " + to_string(my_config.spawn_probab),
-    "noise prec    = " + to_string(my_config.noise_prec),
-    "noise speed   = " + to_string(my_config.noise_speed),
     "window size x = " + to_string(my_config.winsize[0]),
     "window size y = " + to_string(my_config.winsize[1])
   };
@@ -122,8 +120,6 @@ static unsigned int* get_usi_edit_var(const unsigned int edit_num) {
     case 3:  return &my_config.rps[1];
     case 4:  return &my_config.max_ships;
     case 5:  return &my_config.spawn_probab;
-    case 6:  return &my_config.noise_prec;
-    case 7:  return &my_config.noise_speed;
     default: return 0;
   }
 }
@@ -145,8 +141,6 @@ void menuer() {
     "RPS   to",
     "max ships",
     "spawn probabability",
-    "noise precision",
-    "noise speed",
     "window size x",
     "window size y",
   };

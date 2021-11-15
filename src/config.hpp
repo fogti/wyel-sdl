@@ -5,7 +5,7 @@
 struct wyel_config {
   std::vector<std::string> datalocs;
   int winsize[2];
-  unsigned int fps[2], rps[2], max_ships, spawn_probab, noise_prec, noise_speed;
+  unsigned int fps[2], rps[2], max_ships, spawn_probab;
 };
 
 wyel_config get_wyel_config();

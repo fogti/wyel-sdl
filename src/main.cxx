@@ -25,7 +25,6 @@
 #include "img.hpp"
 #include "lock.hpp"
 #include "menu.hpp"
-#include "perlin_noise.hpp"
 #include "rand.hpp"
 #include "shot.hpp"
 
@@ -38,10 +37,6 @@ atomic<bool> breakout, pause_mode;
 static WAverage game_rps, game_fps;
 static unsigned int lifed_rounds, killed_ships;
 static atomic<unsigned> move_sleep, draw_sleep;
-
-// noise field
-typedef map<unsigned int, map<unsigned int, uint32_t>> noise_field_t;
-static noise_field_t prod_noise_field;
 
 // ships
 static ship *usership;
@@ -156,43 +151,6 @@ static void mover() {
   }
 }
 
-static void noiser() {
-  PerlinNoise pn(rand());
-  prctl(PR_SET_NAME, "noiser", 0, 0, 0);
-
-  while(!breakout) {
-    // pause here to prevent div by zero error
-    {
-      unsigned short i = 0;
-      do {
-        SDL_Delay(1 + i);
-        ++i; i %= 500;
-      } while(!breakout && (pause_mode || !my_config.noise_prec));
-    }
-    if(breakout) break;
-
-    double max_x, max_y;
-    {
-      LOCK(draw);
-      max_x = static_cast<double>(WYEL_MAX_X) / my_config.noise_prec;
-      max_y = static_cast<double>(WYEL_MAX_Y) / my_config.noise_prec;
-    }
-    const double cur_ticks = static_cast<double>(SDL_GetTicks()) / my_config.noise_speed;
-    noise_field_t tmp_noise_field;
-
-    for(unsigned int x = 0; x < max_x; ++x)
-      for(unsigned int y = 0; y < max_y; ++y) {
-        const double cur_noise = pn.noise(x / max_x, y / max_y, cur_ticks) * cur_ticks;
-        tmp_noise_field[x * my_config.noise_prec][y * my_config.noise_prec] = 255 * (cur_noise - floor(cur_noise));
-      }
-
-    {
-      LOCK(draw);
-      prod_noise_field = move(tmp_noise_field);
-    }
-  }
-}
-
 static void redrawer() {
   draw_sleep = 15;
   prctl(PR_SET_NAME, "redrawer", 0, 0, 0);
@@ -213,17 +171,6 @@ static void redrawer() {
       // background
       SDL_SetRenderDrawColor(my_renderer, 0, 0, 0, 255);
       SDL_RenderClear(my_renderer);
-
-      // noise
-      if(my_config.noise_prec)
-        for(const auto &x : prod_noise_field) {
-          if(x.first >= WYEL_MAX_X) break;
-          for(const auto &y : x.second) {
-            if(y.first >= WYEL_MAX_Y) break;
-            SDL_SetRenderDrawColor(my_renderer, 0, y.second, y.second, 255);
-            SDL_RenderDrawPoint(my_renderer, x.first, y.first);
-          }
-        }
 
       // ships and shots
       {
@@ -397,7 +344,6 @@ int main(int argc, char *argv[]) {
 
   thread t_redraw(redrawer);
   thread t_move(mover);
-  thread t_noise(noiser);
 
   const auto key_sc_q = SDL_GetScancodeFromKey(SDLK_q);
   const auto key_sc_m = SDL_GetScancodeFromKey(SDLK_m);
@@ -446,7 +392,6 @@ int main(int argc, char *argv[]) {
   breakout = true;
   t_redraw.join();
   t_move.join();
-  t_noise.join();
 
   return 0;
 }

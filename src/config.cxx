@@ -20,8 +20,6 @@ wyel_config get_wyel_config() {
   ret.rps[1] = 500;
   ret.max_ships = 2;
   ret.spawn_probab = 10;
-  ret.noise_prec = 5;
-  ret.noise_speed = 1000;
 
   const string myhome = get_wyel_home();
   ifstream cfgf(myhome + "/config");
@@ -50,7 +48,6 @@ wyel_config get_wyel_config() {
           { "rps"         , 2 },
           { "max_ships"   , 1 },
           { "spawn_probab", 1 },
-          { "noise"       , 2 },
           { "winsize"     , 2 },
         };
         const auto it = known_params.find(param);
@@ -79,10 +76,6 @@ wyel_config get_wyel_config() {
           } else if(param == "spawn_probab") {
             ret.spawn_probab = stoi(parts[0]);
             valid = ret.spawn_probab;
-          } else if(param == "noise") {
-            ret.noise_prec = stoi(parts[0]);
-            ret.noise_speed = stoi(parts[1]);
-            valid = ret.noise_prec && ret.noise_speed;
           } else if(param == "winsize") {
             ret.winsize[0] = stoi(parts[0]);
             ret.winsize[1] = stoi(parts[1]);
@@ -121,7 +114,6 @@ void set_wyel_config(const wyel_config& cfg) {
             "rps " << cfg.rps[0] << ' ' << cfg.rps[1] << "\n"
             "max_ships " << cfg.max_ships << "\n"
             "spawn_probab " << cfg.spawn_probab << "\n"
-            "noise " << cfg.noise_prec << ' ' << cfg.noise_speed << "\n"
             "winsize " << cfg.winsize[0] << ' ' << cfg.winsize[1] << "\n";
   }
 }
@@ -134,7 +126,6 @@ void describe_wyel_config(ostream &out) {
          "  rps MIN MAX          set the inclusive minimum / maximum rounds (moves) per second target values\n"
          "  max_ships COUNT      set the maximum number of AI ships\n"
          "  spawn_probab NUM     set the AI ship spawn probability to (1 : NUM)\n"
-         "  noise PREC SPEED     set background noise parameters (PREC and SPEED are the reciprocals of the real values)\n"
          "  winsize X Y          set the start window size\n"
          "\n";
 }
