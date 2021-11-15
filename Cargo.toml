@@ -1,0 +1,17 @@
+[package]
+name = "wyel-sdl"
+version = "0.0.9"
+edition = "2021"
+
+[dependencies]
+
+[dependencies.legion]
+version = "0.4"
+
+[dependencies.sdl2]
+version = "0.35"
+features = ["image", "ttf"]
+
+[dependencies.serde]
+version = "1.0"
+features = ["derive"]
