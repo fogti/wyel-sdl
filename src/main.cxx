@@ -56,7 +56,7 @@ SDL_Renderer *my_renderer;
 mutex mutex_draw;
 static mutex mutex_objch, mutex_usership;
 
-static ThreadPool threadpool(std::min(thread::hardware_concurrency(), static_cast<unsigned>(1u)));
+static ThreadPool threadpool(std::max(thread::hardware_concurrency(), static_cast<unsigned>(1u)));
 
 // SDL text
 static SDL_Color state_text_color;
