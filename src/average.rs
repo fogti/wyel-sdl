@@ -1,5 +1,5 @@
-use std::time::Instant;
 use std::ops;
+use std::time::Instant;
 
 pub struct WAverage<T> {
     pub last: T,
