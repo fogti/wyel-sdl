@@ -270,7 +270,7 @@ static void parse_arguments(const int argc, const char *const argv[]) {
                     "  --max-ships COUNT  set the maximum number of AI ships\n"
                     "\n";
             describe_wyel_config(cout);
-            cout << "wyel-sdl by Erik Zscheile <erik.zscheile.@gmail.com>\n";
+            cout << "wyel-sdl by Alain Zscheile <fogti+devel@ytrizja.de>\n";
             exit(0);
           }
           else if(curarg == "no-usership") have_usership = false;
