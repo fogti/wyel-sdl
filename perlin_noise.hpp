@@ -6,9 +6,8 @@
 
 // I ADDED AN EXTRA METHOD THAT GENERATES A NEW PERMUTATION VECTOR (THIS IS NOT PRESENT IN THE ORIGINAL IMPLEMENTATION)
 
-#ifndef PERLINNOISE_HPP
-# define PERLINNOISE_HPP 1
-# include <vector>
+#pragma once
+#include <vector>
 class PerlinNoise {
   // The permutation vector
   std::vector<int> p;
@@ -22,4 +21,3 @@ class PerlinNoise {
   double lerp(double t, double a, double b) const noexcept;
   double grad(int hash, double x, double y, double z) const noexcept;
 };
-#endif

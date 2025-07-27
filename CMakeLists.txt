@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.7)
+cmake_minimum_required(VERSION 3.12)
 project(wyel)
 set(INSTALL_BIN_DIR bin CACHE PATH "Installation directory for binaries")
 set(INSTALL_STUFF_DIR share/games/wyel-sdl CACHE PATH "Installation directory for game stuff like images")
@@ -16,6 +16,6 @@ include_directories("${PROJECT_SOURCE_DIR}" "${PROJECT_SOURCE_DIR}/ThreadPool" "
 add_subdirectory(images)
 
 add_executable(wyel-sdl average.cxx config.cxx error.cxx font.cxx fs.cxx img.cxx main.cxx menu.cxx perlin_noise.cxx rand.cxx rect.cxx ship.cxx shot.cxx sprite.cxx)
-target_link_libraries(wyel-sdl Threads::Threads ${SDL2_LIBRARY} ${SDL2_TTF_LIBRARY} ${M_LIB})
+target_link_libraries(wyel-sdl Threads::Threads SDL2::SDL2 SDL2_ttf::SDL2_ttf ${M_LIB})
 
 install(TARGETS wyel-sdl DESTINATION "${INSTALL_BIN_DIR}")

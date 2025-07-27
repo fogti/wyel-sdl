@@ -151,8 +151,8 @@ void menuer() {
     "window size y",
   };
 
-  static const map<SDL_Scancode, int> number_map = {
-#define NUMKEY(N) { SDL_GetScancodeFromKey(SDLK_##N), N },
+  static const map<SDL_Keycode, int> number_map = {
+#define NUMKEY(N) { SDLK_##N, N },
     NUMKEY(0)
     NUMKEY(1) NUMKEY(2) NUMKEY(3)
     NUMKEY(4) NUMKEY(5) NUMKEY(6)
@@ -160,7 +160,6 @@ void menuer() {
 #undef NUMKEY
   };
 
-  static const auto key_sc_bs = SDL_GetScancodeFromKey(SDLK_BACKSPACE);
   static const unsigned int text_space = 2;
 
   // main menu code
@@ -205,64 +204,71 @@ void menuer() {
               break;
           }
           break;
+
+        case SDL_KEYDOWN:
+          if(edit) {
+            switch(event.key.keysym.scancode) {
+              case SDL_SCANCODE_ESCAPE:
+              case SDL_SCANCODE_LEFT:
+                {
+                  // apply input
+                  unsigned int * usiptr = get_usi_edit_var(edit_num);
+                  int * siptr = get_si_edit_var(edit_num);
+                  if(usiptr)    *usiptr = number_input;
+                  else if(siptr) *siptr = number_input;
+                  edit = false;
+                  number_input = 0;
+                  draw_menu(text_space, text_height);
+                  draw_menu_select(txtlh, edit_num, true);
+                  SDL_RenderPresent(my_renderer);
+                }
+                break;
+
+              default:
+                {
+                  int new_input = -1;
+                  for(auto &&i : number_map)
+                    if(event.key.keysym.sym == i.first)
+                      new_input = i.second;
+
+                  if(new_input != -1) {
+                    number_input *= 10;
+                    number_input += new_input;
+                    draw_menu_input(txtlh, to_string(number_input));
+                  } else if(event.key.keysym.sym == SDLK_BACKSPACE) {
+                    number_input /= 10;
+                    draw_menu_input(txtlh, to_string(number_input));
+                  }
+                }
+            }
+          } else {
+            if(event.key.keysym.scancode == SDL_SCANCODE_ESCAPE || event.key.keysym.scancode == SDL_SCANCODE_LEFT)
+              break;
+            const auto old_edit_num = edit_num;
+
+            if(event.key.keysym.scancode == SDL_SCANCODE_UP && edit_num > 0)
+              --edit_num;
+            else if(event.key.keysym.scancode == SDL_SCANCODE_DOWN && edit_num < (edit_screens.size() - 1))
+              ++edit_num;
+            else if(event.key.keysym.scancode == SDL_SCANCODE_RIGHT) {
+              unsigned int * usiptr = get_usi_edit_var(edit_num);
+              int * siptr = get_si_edit_var(edit_num);
+              number_input = usiptr ? *usiptr : (siptr ? *siptr : 0);
+              draw_menu_edit(edit_screens[edit_num]);
+              draw_menu_input(txtlh, to_string(number_input));
+              edit = true;
+            }
+
+            if(old_edit_num != edit_num) {
+              draw_menu_select(txtlh, old_edit_num, false);
+              draw_menu_select(txtlh, edit_num,     true);
+              SDL_RenderPresent(my_renderer);
+            }
+          }
+          break;
       }
     }
     if(breakout) break;
-
-    const Uint8 *keys = SDL_GetKeyboardState(0);
-
-    if(edit) {
-      if(keys[SDL_SCANCODE_ESCAPE] || keys[SDL_SCANCODE_LEFT]) {
-        // apply input
-        unsigned int * usiptr = get_usi_edit_var(edit_num);
-        int * siptr = get_si_edit_var(edit_num);
-        if(usiptr)    *usiptr = number_input;
-        else if(siptr) *siptr = number_input;
-        edit = false;
-        number_input = 0;
-        draw_menu(text_space, text_height);
-        draw_menu_select(txtlh, edit_num, true);
-        SDL_RenderPresent(my_renderer);
-      } else {
-        int new_input = -1;
-
-        for(auto &&i : number_map)
-          if(keys[i.first])
-            new_input = i.second;
-
-        if(new_input != -1) {
-          number_input *= 10;
-          number_input += new_input;
-          draw_menu_input(txtlh, to_string(number_input));
-        } else if(keys[key_sc_bs]) {
-          number_input /= 10;
-          draw_menu_input(txtlh, to_string(number_input));
-        }
-      }
-    } else {
-      if(keys[SDL_SCANCODE_ESCAPE] || keys[SDL_SCANCODE_LEFT]) break;
-      const auto old_edit_num = edit_num;
-
-      if(keys[SDL_SCANCODE_UP] && edit_num > 0)
-        --edit_num;
-
-      if(keys[SDL_SCANCODE_DOWN] && edit_num < (edit_screens.size() - 1))
-        ++edit_num;
-
-      if(old_edit_num != edit_num) {
-        draw_menu_select(txtlh, old_edit_num, false);
-        draw_menu_select(txtlh, edit_num,     true);
-        SDL_RenderPresent(my_renderer);
-      } else if(keys[SDL_SCANCODE_RIGHT]) {
-        unsigned int * usiptr = get_usi_edit_var(edit_num);
-        int * siptr = get_si_edit_var(edit_num);
-        number_input = usiptr ? *usiptr : (siptr ? *siptr : 0);
-        draw_menu_edit(edit_screens[edit_num]);
-        draw_menu_input(txtlh, to_string(number_input));
-        edit = true;
-      }
-    }
-
     SDL_Delay(75);
   }
   pause_mode = false;

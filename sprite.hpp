@@ -1,7 +1,6 @@
-#ifndef SPRITE_HPP
-# define SPRITE_HPP 1
-# include <SDL.h>
-# include <direction.hpp>
+#pragma once
+#include <SDL.h>
+#include <direction.hpp>
 class sprite {
   SDL_Texture *image;
   bool collision;
@@ -26,4 +25,3 @@ class sprite {
 bool operator==(const sprite& a, const sprite& b) noexcept;
 bool operator!=(const sprite& a, const sprite& b) noexcept;
 bool is_hit(const sprite& a, const sprite& b) noexcept;
-#endif

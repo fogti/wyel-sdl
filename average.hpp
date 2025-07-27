@@ -1,5 +1,4 @@
-#ifndef AVERAGE_HPP
-# define AVERAGE_HPP 1
+#pragma once
 # include <SDL.h>
 class WAverage final {
  public:
@@ -19,4 +18,3 @@ class WAverage final {
   void push() noexcept;
   value_t get() const noexcept;
 };
-#endif

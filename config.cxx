@@ -111,7 +111,7 @@ void set_wyel_config(const wyel_config& cfg) {
     {
       const vector<string> twdl(cfg.datalocs.begin(), cfg.datalocs.end() - 3);
       if(!twdl.empty()) {
-        cfgf << "datalocs";
+        cfgf << "dataloc";
         for(auto &&i : twdl) cfgf << ' ' << i;
         cfgf << '\n';
       }

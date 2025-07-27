@@ -1,5 +1,4 @@
-#ifndef WYEL_STATE_GUARD_HPP
-# define WYEL_STATE_GUARD_HPP 1
+#pragma once
 template<class T>
 class StateGuard {
   T& _r;
@@ -23,4 +22,3 @@ template<class T>
 auto make_StateGuard(T &o) noexcept {
   return StateGuard<T>(o);
 }
-#endif

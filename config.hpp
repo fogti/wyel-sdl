@@ -1,8 +1,7 @@
-#ifndef WYEL_CONFIG_HPP
-# define WYEL_CONFIG_HPP 1
-# include <string>
-# include <vector>
-# include <ostream>
+#pragma once
+#include <string>
+#include <vector>
+#include <ostream>
 struct wyel_config {
   std::vector<std::string> datalocs;
   int winsize[2];
@@ -12,4 +11,3 @@ struct wyel_config {
 wyel_config get_wyel_config();
 void set_wyel_config(const wyel_config &c);
 void describe_wyel_config(std::ostream &out);
-#endif

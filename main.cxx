@@ -11,6 +11,7 @@
 #include <functional>
 #include <iostream>
 #include <map>
+#include <set>
 #include <string>
 #include <thread>
 #include <unordered_map>
@@ -195,7 +196,7 @@ static void noiser() {
 
 static void redrawer() {
   draw_sleep = 15;
-  prctl(PR_SET_NAME, "redrawer", 0, 0, 0);
+  //prctl(PR_SET_NAME, "redrawer", 0, 0, 0);
 
   while(!breakout && !ships.empty()) {
     {
@@ -376,7 +377,7 @@ int main(int argc, char *argv[]) {
   my_window = SDL_CreateWindow("WYEL",
                                SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
                                WYEL_MAX_X, WYEL_MAX_Y,
-                               SDL_WINDOW_RESIZABLE);
+                               SDL_WINDOW_RESIZABLE | SDL_WINDOW_SHOWN);
   if(!my_window) sdl_errmsg("SDL_CreateWindow");
 
   my_renderer = SDL_CreateRenderer(my_window, -1, 0);
@@ -390,17 +391,20 @@ int main(int argc, char *argv[]) {
   text_font = get_font(12);
   if(!text_font) ttf_errmsg("get_font via TTF_OpenFont");
 
+  SDL_RenderPresent(my_renderer);
+  // unfortunately, something here breaks keyboard input completely, idk
+  //SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
+
   const bool have_usership = usership;
   if(usership) usership = new ship();
 
   ships.emplace_back();
 
-  thread t_redraw(redrawer);
+  //thread t_redraw(redrawer);
   thread t_move(mover);
   thread t_noise(noiser);
 
-  const auto key_sc_q = SDL_GetScancodeFromKey(SDLK_q);
-  const auto key_sc_m = SDL_GetScancodeFromKey(SDLK_m);
+  std::set<SDL_Scancode> keys_pressed;
 
   while(!breakout) {
     while(SDL_PollEvent(&event)) {
@@ -420,31 +424,48 @@ int main(int argc, char *argv[]) {
               break;
           }
           break;
+
+        case SDL_KEYDOWN:
+          cout << "keydown event " << hex << event.key.keysym.scancode << dec << endl;
+          if(event.key.keysym.scancode == SDL_SCANCODE_ESCAPE || event.key.keysym.sym == SDLK_q)
+            breakout = true;
+          else if(event.key.keysym.sym == SDLK_m)
+            menuer();
+          else
+            keys_pressed.insert(event.key.keysym.scancode);
+          break;
+
+        case SDL_KEYUP:
+          cout << "keyup event " << hex << event.key.keysym.scancode << dec << endl;
+          keys_pressed.erase(event.key.keysym.scancode);
+          break;
+
+        default:
+          cout << "unhandled event " << hex << event.type << dec << endl;
       }
     }
 
-    const Uint8 *const keys = SDL_GetKeyboardState(0);
-    if(breakout || keys[SDL_SCANCODE_ESCAPE] || keys[key_sc_q])
+    if(breakout)
       break;
-    if(keys[key_sc_m])
-      menuer();
+
+    redrawer();
 
     if(have_usership) {
-      with_usership<void>([keys](ship &my_usership) {
-        if(keys[SDL_SCANCODE_UP]    || keys[SDL_SCANCODE_W])
+      with_usership<void>([&keys_pressed](ship &my_usership) {
+        if(keys_pressed.count(SDL_SCANCODE_UP)    || keys_pressed.count(SDL_SCANCODE_W))
           my_usership.move(UP);
-        if(keys[SDL_SCANCODE_LEFT]  || keys[SDL_SCANCODE_A])
+        if(keys_pressed.count(SDL_SCANCODE_LEFT)  || keys_pressed.count(SDL_SCANCODE_A))
           my_usership.move(LE);
-        if(keys[SDL_SCANCODE_DOWN]  || keys[SDL_SCANCODE_S])
+        if(keys_pressed.count(SDL_SCANCODE_DOWN)  || keys_pressed.count(SDL_SCANCODE_S))
           my_usership.move(DO);
-        if(keys[SDL_SCANCODE_RIGHT] || keys[SDL_SCANCODE_D])
+        if(keys_pressed.count(SDL_SCANCODE_RIGHT) || keys_pressed.count(SDL_SCANCODE_D))
           my_usership.move(RI);
       });
     }
-    SDL_Delay(std::min(move_sleep, draw_sleep) / 2 + 20);
+    SDL_Delay(std::min(move_sleep, draw_sleep) / 2);
   }
   breakout = true;
-  t_redraw.join();
+  //t_redraw.join();
   t_move.join();
   t_noise.join();
 
